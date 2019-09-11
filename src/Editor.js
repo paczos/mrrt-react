@@ -57,7 +57,7 @@ class MRRTText extends MRRTNodeComponent {
     }
 }
 
-export class Editor extends React.Component {
+class EditorDisconnected extends React.Component {
 
     render() {
 
@@ -68,26 +68,29 @@ export class Editor extends React.Component {
         >
             <div style={{ gridColumn: 1 }}>
                 <h1>Template editor</h1>
-                <MRRTRenderer mode='edit' toHTML={false}/>
+                <MRRTRenderer mode='edit' templateHTML={this.props.templateHTML} toHTML={false}/>
             </div>
             <div style={{ gridColumn: 2 }}>
                 <h1>Template preview</h1>
-                <MRRTRenderer mode='template' toHTML={false}/>;
+                <MRRTRenderer mode='template' templateHTML={this.props.templateHTML} toHTML={false}/>
 
             </div>
             <div style={{ gridColumn: 3 }}>
                 <h1>Report preview</h1>
-                <MRRTRenderer mode='report' toHTML={false}/>
+                <MRRTRenderer mode='report' templateHTML={this.props.templateHTML} toHTML={false}/>
 
             </div>
             <div style={{ gridColumn: 4 }}>
                 <h1>Template html preview</h1>
-                <MRRTRenderer mode='template' toHTML={true}/>;
+                <MRRTRenderer mode='template' templateHTML={this.props.templateHTML} toHTML={true}/>
             </div>
         </div>;
     }
 }
 
+export let Editor = connect((state) => ({
+    templateHTML: state.templateHTML,
+}))(EditorDisconnected);
 
 class MRRTRendererDisconnected extends React.Component {
     factoryFunctionsLib = [
@@ -112,10 +115,11 @@ class MRRTRendererDisconnected extends React.Component {
 
 
     render() {
-        let templateHTMl = this.props.templateHTMl;
-        let out = ReactHtmlParser(templateHTMl, { transform: this.transform });
+        let templateHTML = this.props.templateHTML;
+        let out = ReactHtmlParser(templateHTML, { transform: this.transform });
         let htmlStr = ReactDOMServer.renderToStaticMarkup(out);
         let returnHtml = this.props.toHTML;
+
         return <div>
             {!returnHtml && out}
             {returnHtml && <p>
@@ -123,15 +127,18 @@ class MRRTRendererDisconnected extends React.Component {
             </p>}
         </div>;
     }
+
+    handleClick = () => {
+        console.log(this.props.children);
+        this.props.children.updateHTML(ReactDOMServer.renderToStaticMarkup(<div>{this.props.children}</div>));
+    };
 }
 
-export let MRRTRenderer = connect((state) => {
-    return { templateHTMl: state };
-}, dispatch => {
+export let MRRTRenderer = connect(undefined, dispatch => {
     return { updateHTML: (templateHTML) => dispatch({ type: 'SET_TEMPLATE' }) };
 })(MRRTRendererDisconnected);
 
 MRRTRenderer.propTypes = {
-    mode: PropTypes.oneOf(['editor', 'template', 'report']),
+    mode: PropTypes.oneOf(['edit', 'template', 'report']),
     toHTML: PropTypes.bool.isRequired,
 };
