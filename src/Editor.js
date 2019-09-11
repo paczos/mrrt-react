@@ -3,6 +3,7 @@ import ReactHtmlParser, {convertNodeToElement} from 'react-html-parser';
 import PropTypes from 'prop-types';
 import {MRRTNodeComponent} from './MRRTNodeComponent';
 import ReactDOMServer from 'react-dom/server';
+import {connect} from 'react-redux';
 
 class MRRTSection extends MRRTNodeComponent {
     constructor(props) {
@@ -19,6 +20,15 @@ class MRRTSection extends MRRTNodeComponent {
         return <section data-section-name={state.sectionName}>
             {node.children.map((n, i) => this.props.transformFunc(n, i))}
         </section>;
+    }
+
+    renderInEditorMode() {
+        let state = this.state;
+        return <input value={state.sectionName}/>;
+    }
+
+    renderInReportMode() {
+        return <h2>{this.state.sectionName}</h2>;
     }
 }
 
@@ -42,23 +52,53 @@ class MRRTText extends MRRTNodeComponent {
 
     renderInTemplateMode() {
         let state = this.state;
-        let node = this.props.node;
         return <input value={state.text} onChange={this.handleTextChange}>
         </input>;
     }
 }
 
-
 export class Editor extends React.Component {
+
+    render() {
+
+
+        return <div style={{
+            display: 'grid',
+        }}
+        >
+            <div style={{ gridColumn: 1 }}>
+                <h1>Template editor</h1>
+                <MRRTRenderer mode='edit' toHTML={false}/>
+            </div>
+            <div style={{ gridColumn: 2 }}>
+                <h1>Template preview</h1>
+                <MRRTRenderer mode='template' toHTML={false}/>;
+
+            </div>
+            <div style={{ gridColumn: 3 }}>
+                <h1>Report preview</h1>
+                <MRRTRenderer mode='report' toHTML={false}/>
+
+            </div>
+            <div style={{ gridColumn: 4 }}>
+                <h1>Template html preview</h1>
+                <MRRTRenderer mode='template' toHTML={true}/>;
+            </div>
+        </div>;
+    }
+}
+
+
+class MRRTRendererDisconnected extends React.Component {
     factoryFunctionsLib = [
         {
             conditionFunc: (node) => (node.type === 'tag' && node.name === 'section'),
-            makeObj: (node) => <MRRTSection mode={this.state.mode} transformFunc={this.transform}
+            makeObj: (node) => <MRRTSection mode={this.props.mode} transformFunc={this.transform}
                                             node={node}/>,
         },
         {
             conditionFunc: (node) => (node.type === 'tag' && node.attribs['data-field-type'] === 'TEXT'),
-            makeObj: (node) => <MRRTText mode={this.state.mode} transformFunc={this.transform}
+            makeObj: (node) => <MRRTText mode={this.props.mode} transformFunc={this.transform}
                                          node={node}/>,
         },
     ];
@@ -70,22 +110,28 @@ export class Editor extends React.Component {
         return convertNodeToElement(node, index, this.transform);
     };
 
-    state = { mode: 'template' };
 
     render() {
         let templateHTMl = this.props.templateHTMl;
         let out = ReactHtmlParser(templateHTMl, { transform: this.transform });
         let htmlStr = ReactDOMServer.renderToStaticMarkup(out);
-
+        let returnHtml = this.props.toHTML;
         return <div>
-            {out}
-            <p>
+            {!returnHtml && out}
+            {returnHtml && <p>
                 {htmlStr}
-            </p>
+            </p>}
         </div>;
     }
 }
 
-Editor.propTypes = {
-    templateHTMl: PropTypes.string.isRequired,
+export let MRRTRenderer = connect((state) => {
+    return { templateHTMl: state };
+}, dispatch => {
+    return { updateHTML: (templateHTML) => dispatch({ type: 'SET_TEMPLATE' }) };
+})(MRRTRendererDisconnected);
+
+MRRTRenderer.propTypes = {
+    mode: PropTypes.oneOf(['editor', 'template', 'report']),
+    toHTML: PropTypes.bool.isRequired,
 };

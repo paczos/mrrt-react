@@ -1,13 +1,19 @@
 import React from 'react';
 import './App.css';
 import {Editor} from './Editor';
-import {template_html} from './base_ct_neck';
+import {Provider} from 'react-redux';
+import {template} from './reducers';
+import {createStore} from 'redux';
 
+
+const store = createStore(template);
 
 function App() {
     return (
         <div>
-            <Editor templateHTMl={template_html}/>
+            <Provider store={store}>
+                <Editor/>
+            </Provider>
         </div>
     );
 }

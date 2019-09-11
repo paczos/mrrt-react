@@ -16,7 +16,16 @@ export class MRRTNodeComponent extends React.Component {
     }
 
     render() {
-        return this.props.mode === 'template' ? this.renderInTemplateMode() : this.renderInEditorMode();
+        switch (this.props.mode) {
+            case 'edit':
+                return this.renderInEditorMode();
+            case 'report':
+                return this.renderInReportMode();
+            case 'template':
+                return this.renderInTemplateMode();
+            default:
+                throw new Error(`${this.props.mode} is not among supported modes`);
+        }
     }
 
 
@@ -27,8 +36,12 @@ export class MRRTNodeComponent extends React.Component {
     renderInEditorMode() {
         throw new Error(`renderInEditorMode not implemented in ${this._getClassName()}`);
     }
+
+    renderInReportMode() {
+        throw new Error(`renderInReportMode not implemented in ${this._getClassName()}`);
+    }
 }
 
 MRRTNodeComponent.propTypes = {
-    mode: PropTypes.oneOf(['template', 'report']).isRequired,
+    mode: PropTypes.oneOf(['edit', 'template', 'report']).isRequired,
 };
