@@ -6,7 +6,7 @@ import {template} from './reducers';
 import {createStore} from 'redux';
 
 
-const store = createStore(template);
+export let store = createStore(template);
 
 function App() {
     return (

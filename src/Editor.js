@@ -3,9 +3,11 @@ import ReactHtmlParser, {convertNodeToElement} from 'react-html-parser';
 import PropTypes from 'prop-types';
 import {MRRTNodeComponent} from './MRRTNodeComponent';
 import ReactDOMServer from 'react-dom/server';
-import {connect} from 'react-redux';
+import ReactDOM from 'react-dom';
+import {connect, Provider} from 'react-redux';
+import {store} from './App';
 
-class MRRTSection extends MRRTNodeComponent {
+class MRRTSectionDisconnected extends MRRTNodeComponent {
     constructor(props) {
         super(props);
         let node = props.node;
@@ -22,9 +24,14 @@ class MRRTSection extends MRRTNodeComponent {
         </section>;
     }
 
+    handleSectionNameChange = (e) => {
+        console.log((e.target.value));
+        this.setState({ sectionName: e.target.value }, this.props.updateHTML);
+    };
+
     renderInEditorMode() {
         let state = this.state;
-        return <input value={state.sectionName}/>;
+        return <input value={state.sectionName} onChange={this.handleSectionNameChange}/>;
     }
 
     renderInReportMode() {
@@ -32,6 +39,9 @@ class MRRTSection extends MRRTNodeComponent {
     }
 }
 
+let MRRTSection = connect(undefined, (dispatch) => ({
+    updateHTML: () => dispatch({ type: 'UPDATE_HTML' }),
+}))(MRRTSectionDisconnected);
 MRRTSection.propTypes = {
     transformFunc: PropTypes.func.isRequired,
     node: PropTypes.object.isRequired,
@@ -60,29 +70,27 @@ class MRRTText extends MRRTNodeComponent {
 class EditorDisconnected extends React.Component {
 
     render() {
-
-
         return <div style={{
             display: 'grid',
         }}
         >
             <div style={{ gridColumn: 1 }}>
                 <h1>Template editor</h1>
-                <MRRTRenderer mode='edit' templateHTML={this.props.templateHTML} toHTML={false}/>
+                <MRRTRenderer mode='edit' templateHTML={this.props.templateHTML} toHTML={false}
+                              portalContainer={document.getElementById('templatePreview')}/>
             </div>
             <div style={{ gridColumn: 2 }}>
                 <h1>Template preview</h1>
-                <MRRTRenderer mode='template' templateHTML={this.props.templateHTML} toHTML={false}/>
-
+                {/*<MRRTRenderer mode='template' templateHTML={this.props.templateHTML} toHTML={false}*/}
+                {/*              portalContainer={document.getElementById('reportPreview')}/>*/}
             </div>
             <div style={{ gridColumn: 3 }}>
                 <h1>Report preview</h1>
-                <MRRTRenderer mode='report' templateHTML={this.props.templateHTML} toHTML={false}/>
-
+                <div id='reportPreview'/>
             </div>
             <div style={{ gridColumn: 4 }}>
                 <h1>Template html preview</h1>
-                <MRRTRenderer mode='template' templateHTML={this.props.templateHTML} toHTML={true}/>
+                <div id='templatePreview'/>
             </div>
         </div>;
     }
@@ -113,18 +121,41 @@ class MRRTRendererDisconnected extends React.Component {
         return convertNodeToElement(node, index, this.transform);
     };
 
+    constructor(props) {
+        super(props);
+        console.log(this.props.templateHTML);
+
+        this.myRef = React.createRef();
+        this.state = {
+            tree: this.createTreeWithRef(),
+        };
+    }
+
+    createTreeWithRef = () => {
+
+        return <Provider
+            store={store}>{ReactHtmlParser(this.props.templateHTML, { transform: this.transform })}</Provider>;
+    };
 
     render() {
-        let templateHTML = this.props.templateHTML;
-        let out = ReactHtmlParser(templateHTML, { transform: this.transform });
-        let htmlStr = ReactDOMServer.renderToStaticMarkup(out);
-        let returnHtml = this.props.toHTML;
+        console.log('should update html?', this.props.shouldUpdateHTML);
+        if (this.props.shouldUpdateHTML) {
+            console.log('updating html in store: render current state to html string');
+            console.log(this.myRef);
+            let htmlStr = ReactDOMServer.renderToStaticMarkup(this.state.tree);
+            console.log('update html in store');
+            this.props.updateHTML(htmlStr);
+            console.log('set the new html in store as current state tree. Should update html?', this.props.shouldUpdateHTML);
+        }
+        if (this.props.shouldSetState) {
+            this.setState({ tree: this.createTreeWithRef() });
+            this.props.finishUpdate();
+        }
 
+        console.log(this.state.tree);
         return <div>
-            {!returnHtml && out}
-            {returnHtml && <p>
-                {htmlStr}
-            </p>}
+            {this.state.tree}
+            {ReactDOM.createPortal(this.props.templateHTML, this.props.portalContainer)}
         </div>;
     }
 
@@ -134,11 +165,18 @@ class MRRTRendererDisconnected extends React.Component {
     };
 }
 
-export let MRRTRenderer = connect(undefined, dispatch => {
-    return { updateHTML: (templateHTML) => dispatch({ type: 'SET_TEMPLATE' }) };
+export let MRRTRenderer = connect((state) => {
+    console.log('map state to props called with shouldUpdate', state.updateHTML);
+    return { shouldUpdateHTML: state.updateHTML, shouldSetState: state.justUpdated };
+}, dispatch => {
+    return {
+        updateHTML: (templateHTML) => dispatch({ type: 'SET_TEMPLATE', payload: templateHTML }),
+        finishUpdate: () => dispatch({ type: 'FINISH_UPDATE' }),
+    };
 })(MRRTRendererDisconnected);
 
 MRRTRenderer.propTypes = {
     mode: PropTypes.oneOf(['edit', 'template', 'report']),
     toHTML: PropTypes.bool.isRequired,
+    portalContainer: PropTypes.node,
 };
