@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.css';
-import {Editor} from './Editor';
+import {MRRTEditor} from './Editor';
 import {Provider} from 'react-redux';
 import {template} from './reducers';
 import {createStore} from 'redux';
@@ -12,7 +12,7 @@ function App() {
     return (
         <div>
             <Provider store={store}>
-                <Editor/>
+                <MRRTEditor/>
             </Provider>
         </div>
     );

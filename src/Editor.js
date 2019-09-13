@@ -7,45 +7,91 @@ import ReactDOM from 'react-dom';
 import {connect, Provider} from 'react-redux';
 import {store} from './App';
 
-class MRRTSectionDisconnected extends MRRTNodeComponent {
+import {
+    Editor,
+    EditorState, ContentState, convertFromHTML, CompositeDecorator,
+} from 'draft-js';
+import {template_html} from './base_ct_neck';
+
+export class MRRTEditor extends React.Component {
+
     constructor(props) {
         super(props);
-        let node = props.node;
-        this.state = {
-            sectionName: node.attribs['data-section-name'],
+
+        let blocksFromHTML = convertFromHTML(template_html);
+        console.log(blocksFromHTML.contentBlocks.map(m => m.toJS()));
+        console.log(blocksFromHTML.entityMap);
+
+
+        const sampleMarkup =
+            '<b>Bold text</b>, <i>Italic text</i><br/ ><br />' +
+            '<a href="http://www.facebook.com">Example link</a><br /><br/ >' +
+            '<img src="image.png" height="112" width="200" />' +
+            '<h4>asdad</h4>' +
+            '<section>asdas</section>'
+        ;
+        blocksFromHTML = convertFromHTML(sampleMarkup);
+
+
+        const editorState = ContentState.createFromBlockArray(
+            blocksFromHTML.contentBlocks,
+            blocksFromHTML.entityMap,
+        );
+        const Link = (props) => {
+            const { url } = props.contentState.getEntity(props.entityKey).getData();
+            return (
+                <a href={url} style={{ color: 'red' }}>
+                    {props.children}
+                </a>
+            );
         };
+
+        const MRRTSection = (props) => {
+            return (
+                <span style={{ color: 'green' }}>section </span>
+            );
+        };
+
+        const decorator = new CompositeDecorator([
+            {
+                strategy: this.sectionStrategy,
+                component: MRRTSection,
+            }]);
+        this.state = {
+            editorState: EditorState.createWithContent(editorState, decorator),
+        };
+
     }
 
-    renderInTemplateMode() {
-        let state = this.state;
-        let node = this.props.node;
-        return <section data-section-name={state.sectionName}>
-            {node.children.map((n, i) => this.props.transformFunc(n, i))}
-        </section>;
-    }
-
-    handleSectionNameChange = (e) => {
-        console.log((e.target.value));
-        this.setState({ sectionName: e.target.value }, this.props.updateHTML);
+    sectionStrategy = (contentBlock, callback, contentState) => {
+        this.findWithRegex(this.SECTION_REGEX, contentBlock, callback);
     };
 
-    renderInEditorMode() {
-        let state = this.state;
-        return <input value={state.sectionName} onChange={this.handleSectionNameChange}/>;
+
+    onChange = (editorState) => this.setState({ editorState });
+
+    render() {
+        return (
+            <Editor
+                editorState={this.state.editorState}
+                onChange={this.onChange}/>
+        );
     }
 
-    renderInReportMode() {
-        return <h2>{this.state.sectionName}</h2>;
-    }
+    SECTION_REGEX = /<section.*<\/section>/g;
+
+    findWithRegex = (regex, contentBlock, callback) => {
+        const text = contentBlock.getText();
+        console.log('looking for items using regex', regex);
+        let matchArr, start;
+        while ((matchArr = regex.exec(text)) !== null) {
+            console.log('foond', regex, 'match!');
+            start = matchArr.index;
+            callback(start, start + matchArr[0].length);
+        }
+
+    };
 }
-
-let MRRTSection = connect(undefined, (dispatch) => ({
-    updateHTML: () => dispatch({ type: 'UPDATE_HTML' }),
-}))(MRRTSectionDisconnected);
-MRRTSection.propTypes = {
-    transformFunc: PropTypes.func.isRequired,
-    node: PropTypes.object.isRequired,
-};
 
 class MRRTText extends MRRTNodeComponent {
     constructor(props) {
@@ -67,38 +113,6 @@ class MRRTText extends MRRTNodeComponent {
     }
 }
 
-class EditorDisconnected extends React.Component {
-
-    render() {
-        return <div style={{
-            display: 'grid',
-        }}
-        >
-            <div style={{ gridColumn: 1 }}>
-                <h1>Template editor</h1>
-                <MRRTRenderer mode='edit' templateHTML={this.props.templateHTML} toHTML={false}
-                              portalContainer={document.getElementById('templatePreview')}/>
-            </div>
-            <div style={{ gridColumn: 2 }}>
-                <h1>Template preview</h1>
-                {/*<MRRTRenderer mode='template' templateHTML={this.props.templateHTML} toHTML={false}*/}
-                {/*              portalContainer={document.getElementById('reportPreview')}/>*/}
-            </div>
-            <div style={{ gridColumn: 3 }}>
-                <h1>Report preview</h1>
-                <div id='reportPreview'/>
-            </div>
-            <div style={{ gridColumn: 4 }}>
-                <h1>Template html preview</h1>
-                <div id='templatePreview'/>
-            </div>
-        </div>;
-    }
-}
-
-export let Editor = connect((state) => ({
-    templateHTML: state.templateHTML,
-}))(EditorDisconnected);
 
 class MRRTRendererDisconnected extends React.Component {
     factoryFunctionsLib = [
