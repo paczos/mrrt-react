@@ -2,11 +2,11 @@ import React from 'react';
 import './App.css';
 import {MRRTEditor} from './Editor';
 import {Provider} from 'react-redux';
-import {template} from './reducers';
+import {templateReducer} from './reducers';
 import {createStore} from 'redux';
 
 
-export let store = createStore(template);
+export let store = createStore(templateReducer);
 
 function App() {
     return (

@@ -1,21 +1,7 @@
-import {template_html} from './base_ct_neck';
-
-export let template = (state = { templateHTML: template_html, updateHTML: false }, action) => {
-    console.log('reducer:', action.type, action.payload);
-    let newState = {};
+export let templateReducer = (state = { editorReadOnly: false }, action) => {
     switch (action.type) {
-        case 'SET_TEMPLATE':
-            newState = Object.assign({}, state, { templateHTML: action.payload, updateHTML: false, justUpdated: true });
-            console.log('inside reducer shouldupdatehtml?', newState.updateHTML);
-            return newState;
-        case 'UPDATE_HTML':
-            newState = Object.assign({}, state, { updateHTML: true, justUpdated: false });
-            console.log('newstate in update_html ', newState.updateHTML);
-            return newState;
-        case 'FINISH_UPDATE':
-            newState = Object.assign({}, state, { updateHTML: false, justUpdated: false });
-            console.log('newstate in update_html ', newState.updateHTML);
-            return newState;
+        case 'SET_EDITOR_READONLY':
+            return { ...state, editorReadOnly: action.payload };
         default:
             return state;
     }
