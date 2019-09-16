@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.css';
-import {MRRTEditor} from './Editor';
+import {MRRTEditor} from './MRRTEditor';
 import {Provider} from 'react-redux';
 import {templateReducer} from './reducers';
 import {createStore} from 'redux';
