@@ -14,7 +14,6 @@ class MRRTEditorDisconnected extends React.Component {
 
     onChange = ({ value }) => {
         this.setState({ value });
-        console.log(value.toJS());
     };
 
     render() {

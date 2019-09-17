@@ -35,8 +35,7 @@ const rules = [
     {
         deserialize(el, next) {
             let name = el.tagName.toLowerCase();
-            if (name === 'select' && (el.hasAttribute('multiple') === false || (el.hasAttribute('multiple') === true && el.getAttribute('multiple') === false))) {
-                console.log(Array.from(el.childNodes));
+            if (name === 'select' && (el.hasAttribute('multiple') === false)) {
                 return {
                     object: 'inline',
                     type: 'MRRTSelectSingle',
@@ -44,7 +43,27 @@ const rules = [
                         value: el.value,
 
                         choices: Array.from(el.childNodes).filter(n => {
-                            console.log(n);
+                            return n.nodeType === 1 && n.tagName.toLowerCase() === 'option';
+                        }).map(c => ({
+                            label: c.label,
+                        })),
+                    },
+                    nodes: next(el.childNodes),
+                };
+            }
+        },
+    },
+    {
+        deserialize(el, next) {
+            let name = el.tagName.toLowerCase();
+            if (name === 'select' && (
+                (el.hasAttribute('multiple') === true))) {
+                return {
+                    object: 'inline',
+                    type: 'MRRTSelectMultiple',
+                    data: {
+                        value: el.value,
+                        choices: Array.from(el.childNodes).filter(n => {
                             return n.nodeType === 1 && n.tagName.toLowerCase() === 'option';
                         }).map(c => ({
                             label: c.label,
