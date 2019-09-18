@@ -1,4 +1,4 @@
-# MRRT React
+# MRRT React architecture by upmedic team
 upmedic team presents brand new approach to editing radiological reports templates by
 using Slate.js backed by MRRT standards provided by IHE.
 
