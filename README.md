@@ -19,5 +19,5 @@ clone the repo
 ``` bash
 cd mmrrt-react
 npm install
-npm run
+npm start
 ```
